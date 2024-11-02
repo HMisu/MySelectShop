@@ -2,8 +2,47 @@ const host = 'http://' + window.location.host;
 let targetId;
 
 $(document).ready(function () {
+    const auth = getToken();
 
-    showProduct();
+    // getToken() 함수로 JWT 토큰을 불러와 auth 변수에 저장
+    // auth 값이 유효할 경우 $.ajaxPrefilter가 설정
+    // $.ajaxPrefilter : JQuery의 AJAX 요청을 사전에 수정하거나 설정할 수 있도록 하는 함수. AJAX 요청의 옵션이나 헤더를 일괄적으로 추가 및 수정 가능.
+    // 이 설정으로 인해 모든 AJAX 요청이 서버로 전송되기 전에 Authorization 헤더에 토큰이 자동으로 추가됨
+    // 이렇게 설정된 헤더는 이후 코드에서 발생하는 모든 AJAX 요청($.ajax)에 자동으로 포함됨
+    if (auth !== undefined && auth !== '') {
+        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+            jqXHR.setRequestHeader('Authorization', auth);
+        });
+    } else {
+        window.location.href = host + '/api/user/login-page';
+        return;
+    }
+
+    $.ajax({
+        type: 'GET',
+        url: `/api/user-info`,
+        contentType: 'application/json',
+    })
+        .done(function (res, status, xhr) {
+            const username = res.username;
+            const isAdmin = !!res.admin;
+
+            if (!username) {
+                window.location.href = '/api/user/login-page';
+                return;
+            }
+
+            $('#username').text(username);
+            if (isAdmin) {
+                $('#admin').text(true);
+                showProduct(true);
+            } else {
+                showProduct();
+            }
+        })
+        .fail(function (jqXHR, textStatus) {
+            logout();
+        });
 
     // id 가 query 인 녀석 위에서 엔터를 누르면 execSearch() 함수를 실행하라는 뜻입니다.
     $('#query').on('keypress', function (e) {
@@ -69,7 +108,7 @@ function execSearch() {
             }
         },
         error(error, status, request) {
-            console.error(error);
+            logout();
         }
     })
 
@@ -118,7 +157,7 @@ function addProduct(itemDto) {
             targetId = response.id;
         },
         error(error, status, request) {
-            console.log(error);
+            logout();
         }
     });
 }
@@ -130,9 +169,18 @@ function showProduct(isAdmin = false) {
      * 관심상품 HTML 만드는 함수: addProductItem
      */
 
+    let dataSource = null;
+
+    // admin 계정
+    if (isAdmin) {
+        dataSource = `/api/admin/products`;
+    } else {
+        dataSource = `/api/products`;
+    }
+
     $.ajax({
         type: 'GET',
-        url: '/api/products',
+        url: dataSource,
         contentType: 'application/json',
         success: function (response) {
             $('#product-container').empty();
@@ -143,10 +191,13 @@ function showProduct(isAdmin = false) {
             }
         },
         error(error, status, request) {
-            console.log(error);
+            if (error.status === 403) {
+                $('html').html(error.responseText);
+                return;
+            }
+            logout();
         }
     });
-
 }
 
 function addProductItem(product) {
@@ -208,7 +259,23 @@ function setMyprice() {
             window.location.reload();
         },
         error(error, status, request) {
-            console.error(error);
+            logout();
         }
     })
+}
+
+function logout() {
+    // 토큰 삭제
+    Cookies.remove('Authorization', {path: '/'});
+    window.location.href = host + '/api/user/login-page';
+}
+
+function getToken() {
+    let auth = Cookies.get('Authorization');
+
+    if (auth === undefined) {
+        return '';
+    }
+
+    return auth;
 }
