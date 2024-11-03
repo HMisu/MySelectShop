@@ -170,9 +170,6 @@ function addProduct(itemDto) {
     });
 }
 
-// dataSource에 설정된 URL은 pagination 플러그인이 요청을 보낼 때 사용
-// pagination은 페이지를 로드할 때마다 자동으로 이 URL에 AJAX 요청을 보내 필요한 페이지 데이터를 가져옴
-// page와 size는 pagination 플러그인에서 자동으로 서버에 전달하는 파라미터
 function showProduct(folderId = null) {
     /**
      * 관심상품 목록: #product-container
@@ -298,7 +295,8 @@ function addFolder() {
         window.location.reload();
     })
         .fail(function (xhr, textStatus, errorThrown) {
-            alert("중복된 폴더입니다.");
+            alert(xhr.responseJSON.errorMessage);
+            console.log(xhr.status)
         });
 }
 
@@ -373,7 +371,8 @@ function addInputForProductToFolder(productId, button) {
                     window.location.reload();
                 })
                     .fail(function (xhr, textStatus, errorThrown) {
-                        alert("중복된 폴더입니다.");
+                        alert(xhr.responseJSON.errorMessage);
+                        console.log(xhr.status)
                     });
             });
         },
