@@ -47,6 +47,10 @@ public class ProductService {
         return new ProductResponseDto(product);
     }
 
+    // 지연로딩을 사용하기 위해선 영속성 컨텍스트 필요, 트랜잭션 환경 가져와야 함.
+    // readOnly = true가 설정된 트랜잭션은 데이터베이스에 대한 변경(INSERT, UPDATE, DELETE) 작업을 수행하지 않고, 오직 데이터 조회(SELECT)만 수행
+    // 읽기 전용 트랜잭션은 데이터베이스의 성능을 최적화
+    @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProducts(User user, int page, int size, String sortBy, boolean isAsc) {
         Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
         Sort sort = Sort.by(direction, String.valueOf(sortBy));

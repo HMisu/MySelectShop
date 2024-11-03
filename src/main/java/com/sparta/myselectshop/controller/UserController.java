@@ -4,12 +4,14 @@ import com.sparta.myselectshop.dto.SignupRequestDto;
 import com.sparta.myselectshop.dto.UserInfoDto;
 import com.sparta.myselectshop.entity.UserRoleEnum;
 import com.sparta.myselectshop.security.UserDetailsImpl;
+import com.sparta.myselectshop.service.FolderService;
 import com.sparta.myselectshop.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +28,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final FolderService folderService;
 
     @GetMapping("/user/login-page")
     public String loginPage() {
@@ -62,5 +65,14 @@ public class UserController {
         boolean isAdmin = (role == UserRoleEnum.ADMIN);
 
         return new UserInfoDto(username, isAdmin);
+    }
+
+    @GetMapping("/user-folder")
+    public String getUserInfo(Model model, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        model.addAttribute("folders", folderService.getFolders(userDetails.getUser()));
+
+        // "index"라는 이름의 뷰를 반환이 뷰의 일부를 선택적으로 렌더링하기 위해 :: #fragment를 사용
+        // 여기서 #fragment는 뷰 템플릿 내의 특정 부분(예: HTML의 특정 요소)을 나타냄
+        return "index :: #fragment";
     }
 }
