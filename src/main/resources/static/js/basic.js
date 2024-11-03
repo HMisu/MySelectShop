@@ -4,11 +4,6 @@ let targetId;
 $(document).ready(function () {
     const auth = getToken();
 
-    // getToken() 함수로 JWT 토큰을 불러와 auth 변수에 저장
-    // auth 값이 유효할 경우 $.ajaxPrefilter가 설정
-    // $.ajaxPrefilter : JQuery의 AJAX 요청을 사전에 수정하거나 설정할 수 있도록 하는 함수. AJAX 요청의 옵션이나 헤더를 일괄적으로 추가 및 수정 가능.
-    // 이 설정으로 인해 모든 AJAX 요청이 서버로 전송되기 전에 Authorization 헤더에 토큰이 자동으로 추가됨
-    // 이렇게 설정된 헤더는 이후 코드에서 발생하는 모든 AJAX 요청($.ajax)에 자동으로 포함됨
     if (auth !== undefined && auth !== '') {
         $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
             jqXHR.setRequestHeader('Authorization', auth);
@@ -35,7 +30,7 @@ $(document).ready(function () {
             $('#username').text(username);
             if (isAdmin) {
                 $('#admin').text(true);
-                showProduct(true);
+                showProduct();
             } else {
                 showProduct();
             }
@@ -162,7 +157,7 @@ function addProduct(itemDto) {
     });
 }
 
-function showProduct(isAdmin = false) {
+function showProduct() {
     /**
      * 관심상품 목록: #product-container
      * 검색결과 목록: #search-result-box
@@ -171,31 +166,46 @@ function showProduct(isAdmin = false) {
 
     let dataSource = null;
 
-    // admin 계정
-    if (isAdmin) {
-        dataSource = `/api/admin/products`;
-    } else {
-        dataSource = `/api/products`;
-    }
+    var sorting = $("#sorting option:selected").val();
+    var isAsc = $(':radio[name="isAsc"]:checked').val();
 
-    $.ajax({
-        type: 'GET',
-        url: dataSource,
-        contentType: 'application/json',
-        success: function (response) {
+    dataSource = `/api/products?sortBy=${sorting}&isAsc=${isAsc}`;
+
+    $('#product-container').empty();
+    $('#search-result-box').empty();
+
+    // dataSource에 설정된 URL은 pagination 플러그인이 요청을 보낼 때 사용
+    // pagination은 페이지를 로드할 때마다 자동으로 이 URL에 AJAX 요청을 보내 필요한 페이지 데이터를 가져옴
+    // page와 size는 pagination 플러그인에서 자동으로 서버에 전달하는 파라미터
+    $('#pagination').pagination({
+        dataSource,
+        locator: 'content',
+        alias: {
+            pageNumber: 'page',
+            pageSize: 'size'
+        },
+        totalNumberLocator: (response) => {
+            return response.totalElements;
+        },
+        pageSize: 10,
+        showPrevious: true,
+        showNext: true,
+        ajax: {
+            error(error, status, request) {
+                if (error.status === 403) {
+                    $('html').html(error.responseText);
+                    return;
+                }
+                logout();
+            }
+        },
+        callback: function (response, pagination) {
             $('#product-container').empty();
             for (let i = 0; i < response.length; i++) {
                 let product = response[i];
                 let tempHtml = addProductItem(product);
                 $('#product-container').append(tempHtml);
             }
-        },
-        error(error, status, request) {
-            if (error.status === 403) {
-                $('html').html(error.responseText);
-                return;
-            }
-            logout();
         }
     });
 }
