@@ -64,7 +64,7 @@ public class KakaoService {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("client_id", "919bd6f2e418c19a67d4efd978fb70fa");
-        body.add("redirect_uri", "http://http://3.36.103.160/api/user/kakao/callback");
+        body.add("redirect_uri", "http://52.78.82.141/api/user/kakao/callback");
         body.add("code", code);
 
         // body가 있으면 당연히 post
